@@ -1,0 +1,196 @@
+'use client';
+import { useState, useEffect, useMemo } from 'react';
+import { useApp } from '@/context/AppContext';
+import { fmtDate, STATUS_STYLES, PRIORITY_STYLES, WS_CFG, monthLabel, getProjMonth } from '@/lib/helpers';
+import type { Project, Status, Priority } from '@/lib/types';
+import ProjectModal from './modals/ProjectModal';
+import ConfirmModal from './modals/ConfirmModal';
+
+function StatusPill({ status }: { status: Status }) {
+  const s = STATUS_STYLES[status];
+  return (
+    <span className="status-pill" style={{ background: s.bg, color: s.color, borderColor: s.border }}>
+      {status}
+    </span>
+  );
+}
+
+function PriChip({ priority }: { priority: Priority }) {
+  if (!priority) return null;
+  const s = PRIORITY_STYLES[priority];
+  return (
+    <span className="pri-chip" style={{ background: s.bg, color: s.color, borderColor: s.border }}>
+      {priority}
+    </span>
+  );
+}
+
+export default function TrackerView() {
+  const { projects, setProjects, ws, selClient, setSelClient, clients, currentUser } = useApp();
+  const isAdmin = currentUser?.role === 'admin';
+  const cfg = WS_CFG[ws];
+
+  // Auto-select first client
+  useEffect(() => {
+    const list = clients[ws] || [];
+    if (!selClient || !list.includes(selClient)) {
+      setSelClient(list[0] || '');
+    }
+  }, [ws, clients]);
+
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterPriority, setFilterPriority] = useState('');
+  const [filterMonth, setFilterMonth] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
+  const [editProj, setEditProj] = useState<Project | null>(null);
+  const [deleteProj, setDeleteProj] = useState<Project | null>(null);
+
+  const clientProjects = projects.filter(p => p.ws === ws && p.cl === selClient);
+
+  const availableMonths = useMemo(() => {
+    const months = new Set(clientProjects.map(getProjMonth).filter(Boolean));
+    return Array.from(months).sort().reverse();
+  }, [clientProjects]);
+
+  const filtered = useMemo(() => {
+    return clientProjects.filter(p => {
+      if (search && !p.title.toLowerCase().includes(search.toLowerCase()) && !p.editor.toLowerCase().includes(search.toLowerCase())) return false;
+      if (filterStatus && p.status !== filterStatus) return false;
+      if (filterPriority && p.priority !== filterPriority) return false;
+      if (filterMonth && getProjMonth(p) !== filterMonth) return false;
+      return true;
+    });
+  }, [clientProjects, search, filterStatus, filterPriority, filterMonth]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Partial<Record<Status, number>> = {};
+    clientProjects.forEach(p => { counts[p.status] = (counts[p.status] || 0) + 1; });
+    return counts;
+  }, [clientProjects]);
+
+  function deleteProject(id: string) {
+    setProjects(projects.filter(p => p.id !== id));
+    setDeleteProj(null);
+  }
+
+  const statuses: Status[] = ['Done', 'Full- Running', 'Revision', 'Waiting', 'Pending', 'Kishan'];
+
+  return (
+    <>
+      <div className="content-top">
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>
+          {selClient || 'Select a client'}
+        </h2>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {statuses.filter(s => statusCounts[s]).map(s => {
+            const st = STATUS_STYLES[s];
+            return (
+              <span key={s} className="status-pill" style={{ background: st.bg, color: st.color, borderColor: st.border }}>
+                {s}: {statusCounts[s]}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="filters-bar">
+        <input
+          placeholder="Search title or editor…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ width: 210 }}
+        />
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ width: 130 }}>
+          <option value="">All Statuses</option>
+          {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} style={{ width: 120 }}>
+          <option value="">All Priorities</option>
+          <option value="HIGH">HIGH</option>
+          <option value="MEDIUM">MEDIUM</option>
+          <option value="LOW">LOW</option>
+        </select>
+        <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ width: 130 }}>
+          <option value="">All Months</option>
+          {availableMonths.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}
+        </select>
+        {isAdmin && (
+          <button className="btn btn-dark" style={{ marginLeft: 'auto' }} onClick={() => setShowAdd(true)}>
+            + Add Project
+          </button>
+        )}
+      </div>
+
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style={{ width: 40 }}>#</th>
+              <th>Title</th>
+              <th>Editor</th>
+              <th>Status</th>
+              <th>{cfg.d1}</th>
+              <th>{cfg.d2}</th>
+              <th>{cfg.d3}</th>
+              <th>Priority</th>
+              <th style={{ width: 80 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={9} style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text3)' }}>
+                  📭 No projects found.
+                </td>
+              </tr>
+            ) : filtered.map((p, i) => (
+              <tr key={p.id}>
+                <td className="mono" style={{ color: 'var(--text3)', fontSize: 11 }}>{i + 1}</td>
+                <td style={{ maxWidth: 300 }}>
+                  <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {p.title}
+                  </div>
+                  {p.other && (
+                    <div className="mono" style={{ fontSize: 10, color: 'var(--kish)', marginTop: 2 }}>
+                      {p.other}
+                    </div>
+                  )}
+                </td>
+                <td className="mono" style={{ fontSize: 12, color: 'var(--text2)' }}>{p.editor}</td>
+                <td><StatusPill status={p.status} /></td>
+                <td className="mono" style={{ fontSize: 11, color: 'var(--text3)' }}>{fmtDate(p.d1)}</td>
+                <td className="mono" style={{ fontSize: 11, color: 'var(--text3)' }}>{fmtDate(p.d2)}</td>
+                <td className="mono" style={{ fontSize: 11, color: 'var(--text3)' }}>{fmtDate(p.d3)}</td>
+                <td><PriChip priority={p.priority} /></td>
+                <td>
+                  <div className="row-actions">
+                    <button className="icon-btn" onClick={() => setEditProj(p)} title="Edit">✏️</button>
+                    {isAdmin && (
+                      <button className="icon-btn danger" onClick={() => setDeleteProj(p)} title="Delete">🗑</button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {(showAdd || editProj) && (
+        <ProjectModal
+          project={editProj}
+          onClose={() => { setShowAdd(false); setEditProj(null); }}
+        />
+      )}
+      {deleteProj && (
+        <ConfirmModal
+          title="Delete Project"
+          description={`Delete "${deleteProj.title}"? This cannot be undone.`}
+          onConfirm={() => deleteProject(deleteProj.id)}
+          onCancel={() => setDeleteProj(null)}
+        />
+      )}
+    </>
+  );
+}
