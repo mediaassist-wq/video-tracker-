@@ -33,18 +33,18 @@ export function monthLabel(ym: string): string {
 }
 
 export const STATUS_STYLES: Record<Status, { bg: string; color: string; border: string }> = {
-  'Done':         { bg: '#f0faf4', color: '#3d7a58', border: '#c5e0d0' },
-  'Full- Running':{ bg: '#f0f4ff', color: '#4060b0', border: '#c5d0f0' },
-  'Revision':     { bg: '#fdf6ee', color: '#9a6630', border: '#eed8b8' },
-  'Waiting':      { bg: '#f8f4ff', color: '#7054a8', border: '#ddd0f8' },
-  'Pending':      { bg: '#f7f7f8', color: '#606068', border: '#dddde0' },
-  'Kishan':       { bg: '#fff4f8', color: '#a04870', border: '#f0c8d8' },
+  'Done':         { bg: '#f4f4f5', color: '#52525b', border: '#e4e4e7' },
+  'Full- Running':{ bg: '#111827', color: '#ffffff', border: '#111827' },
+  'Revision':     { bg: '#fafafa', color: '#3f3f46', border: '#d4d4d8' },
+  'Waiting':      { bg: '#fafafa', color: '#3f3f46', border: '#d4d4d8' },
+  'Pending':      { bg: '#fafafa', color: '#a1a1aa', border: '#e4e4e7' },
+  'Kishan':       { bg: '#18181b', color: '#e4e4e7', border: '#3f3f46' },
 };
 
 export const PRIORITY_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  'HIGH':   { bg: '#fdf2f2', color: '#b04848', border: '#f0cece' },
-  'MEDIUM': { bg: '#fdf8f0', color: '#9a7030', border: '#eed8b0' },
-  'LOW':    { bg: '#f4f4f5', color: '#707078', border: '#dddde0' },
+  'HIGH':   { bg: '#18181b', color: '#fafafa', border: '#3f3f46' },
+  'MEDIUM': { bg: '#f4f4f5', color: '#52525b', border: '#d4d4d8' },
+  'LOW':    { bg: '#fafafa', color: '#a1a1aa', border: '#e4e4e7' },
 };
 
 export const WS_CFG = {

@@ -27,24 +27,36 @@ function DateChip({ value, isDone }: { value: string; isDone?: boolean }) {
   if (!value) return <span style={{ color: 'var(--text4)', fontSize: 12 }}>—</span>;
 
   const st = isDone ? 'done' : dateStatus(value);
-  const styles: Record<string, { bg: string; color: string; border: string }> = {
-    done:     { bg: '#f4f4f5', color: '#71717a', border: '#e4e4e7' },
-    overdue:  { bg: '#fdf2f2', color: '#b45454', border: '#f0d0d0' },
-    today:    { bg: '#f0f4ff', color: '#4f6fbd', border: '#d0dcf5' },
-    soon:     { bg: '#fdf8f0', color: '#a07840', border: '#eddfc0' },
-    upcoming: { bg: '#f7f7f8', color: '#52525b', border: '#e4e4e7' },
+
+  const dotColor: Record<string, string> = {
+    done:     '#a1a1aa',
+    overdue:  '#e05252',
+    today:    '#111827',
+    soon:     '#d4a14a',
+    upcoming: '#d1d5db',
   };
-  const s = styles[st] || styles.upcoming;
-  const label = st === 'overdue' ? '! ' : st === 'today' ? '· ' : '';
+  const textColor: Record<string, string> = {
+    done:     '#a1a1aa',
+    overdue:  '#e05252',
+    today:    '#111827',
+    soon:     '#111827',
+    upcoming: '#6b7280',
+  };
 
   return (
     <span style={{
-      display: 'inline-flex', alignItems: 'center',
-      background: s.bg, color: s.color, border: `1px solid ${s.border}`,
-      borderRadius: 6, padding: '3px 8px', fontSize: 11,
-      fontFamily: 'DM Mono, monospace', fontWeight: 600, whiteSpace: 'nowrap',
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      fontFamily: 'DM Mono, monospace', fontSize: 11,
+      fontWeight: st === 'today' || st === 'soon' ? 700 : 500,
+      color: textColor[st],
+      whiteSpace: 'nowrap',
+      textDecoration: st === 'done' ? 'line-through' : 'none',
     }}>
-      {label}{fmtDate(value)}
+      <span style={{
+        width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+        background: dotColor[st],
+      }} />
+      {fmtDate(value)}
     </span>
   );
 }
