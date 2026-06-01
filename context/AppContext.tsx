@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { Project, Clients, SessionUser, WorkspaceId, View } from '@/lib/types';
 import { lsGet, lsSet } from '@/lib/storage';
-import { getSession, initDefaultUser } from '@/lib/auth';
+import { getSession, initDefaultUser, logout } from '@/lib/auth';
 import { DEFAULT_CLIENTS, SEED_PROJECTS } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
 
@@ -136,9 +136,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       })
       .subscribe();
 
+    // Watch for user deletion or username changes — force logout if current user is removed
+    const usersSub = supabase
+      .channel('users-changes')
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'users' }, payload => {
+        const session = getSession();
+        if (session && (payload.old as { username: string }).username === session.username) {
+          logout();
+          setCurrentUser(null);
+        }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(projectsSub);
       supabase.removeChannel(clientsSub);
+      supabase.removeChannel(usersSub);
     };
   }, [ready]);
 

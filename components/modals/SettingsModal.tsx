@@ -8,7 +8,7 @@ import AddUserModal from './AddUserModal';
 import ConfirmModal from './ConfirmModal';
 
 export default function SettingsModal({ onClose }: { onClose: () => void }) {
-  const { currentUser } = useApp();
+  const { currentUser, setCurrentUser } = useApp();
   const isAdmin = currentUser?.role === 'admin';
   const [users, setUsers] = useState<Users>({});
   const [pwCurrent, setPwCurrent] = useState('');
@@ -56,7 +56,12 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
     // Insert new username, delete old
     await upsertUserInDB(newUsername.trim(), data.hash, data.role as Role);
     await deleteUserFromDB(currentUser!.username);
-    setUnMsg('✓ Username changed. Please log in again.');
+    // Update local session so the current device reflects immediately
+    const { login } = await import('@/lib/auth');
+    await login(newUsername.trim(), unPw);
+    setCurrentUser({ username: newUsername.trim(), role: data.role as Role });
+    setUnMsg('✓ Username changed successfully.');
+    setNewUsername(''); setUnPw('');
     getUsersFromDB().then(setUsers);
   }
 

@@ -55,7 +55,7 @@ export async function login(username: string, password: string): Promise<Session
   const hash = await hashStr(password);
   if (hash !== data.hash) return null;
   const session: SessionUser = { username, role: data.role as Role };
-  lsSet('vt-session', `1:${username}:${data.role}`);
+  localStorage.setItem('vt-session', `1:${username}:${data.role}`);
   return session;
 }
 
@@ -66,10 +66,14 @@ export function logout(): void {
 export function getSession(): SessionUser | null {
   if (typeof window === 'undefined') return null;
   try {
-    const s = localStorage.getItem('vt-session');
-    if (!s || s === '0') return null;
-    const parts = s.split(':');
-    if (parts[0] !== '1') return null;
+    let s = localStorage.getItem('vt-session');
+    if (!s || s === '0' || s === 'null') return null;
+    // Handle old JSON-stringified format: "\"1:admin:admin\""
+    if (s.startsWith('"') && s.endsWith('"')) {
+      try { s = JSON.parse(s); } catch { return null; }
+    }
+    const parts = (s as string).split(':');
+    if (parts[0] !== '1' || !parts[1] || !parts[2]) return null;
     return { username: parts[1], role: parts[2] as Role };
   } catch {
     return null;
