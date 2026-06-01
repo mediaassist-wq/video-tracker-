@@ -18,7 +18,10 @@ export default function ProjectModal({ project, onClose }: Props) {
   const [ws, setWs] = useState<WorkspaceId>(project?.ws || globalWs);
   const [cl, setCl] = useState(project?.cl || selClient || clients[globalWs][0] || '');
   const [title, setTitle] = useState(project?.title || '');
-  const [editor, setEditor] = useState(project?.editor || '');
+  // editors stored as comma-separated string; parse into array for UI
+  const [selectedEditors, setSelectedEditors] = useState<string[]>(
+    project?.editor ? project.editor.split(',').map(s => s.trim()).filter(Boolean) : []
+  );
   const [status, setStatus] = useState<Status>(project?.status || 'Pending');
   const [priority, setPriority] = useState<Priority>(project?.priority || '');
   const [d1, setD1] = useState(project?.d1 || '');
@@ -30,9 +33,17 @@ export default function ProjectModal({ project, onClose }: Props) {
   const cfg = WS_CFG[ws];
   const clientList = clients[ws] || [];
 
+  function toggleEditor(name: string) {
+    setSelectedEditors(prev =>
+      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+    );
+  }
+
   function save() {
     if (!title.trim()) { setError('Title is required.'); return; }
     if (!cl) { setError('Client is required.'); return; }
+
+    const editor = selectedEditors.join(', ');
 
     if (project) {
       setProjects(projects.map(p => p.id === project.id
@@ -71,13 +82,45 @@ export default function ProjectModal({ project, onClose }: Props) {
               <label>Video / Project Title</label>
               <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Project title" autoFocus />
             </div>
-            <div className="form-group">
-              <label>Editor</label>
-              <select value={editor} onChange={e => setEditor(e.target.value)}>
-                <option value="">— Select Editor —</option>
-                {editorNames.map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
+
+            {/* Multi-editor selector */}
+            <div className="form-group full-span">
+              <label>Editor(s)</label>
+              {editorNames.length === 0 ? (
+                <p style={{ fontSize: 12, color: 'var(--text3)', margin: '4px 0 0' }}>
+                  No editors added yet. Go to Editors tab to add editors.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                  {editorNames.map(name => {
+                    const selected = selectedEditors.includes(name);
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        onClick={() => toggleEditor(name)}
+                        style={{
+                          padding: '4px 12px', borderRadius: 6, fontSize: 13, cursor: 'pointer',
+                          border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
+                          background: selected ? 'var(--accent)' : 'var(--bg3)',
+                          color: selected ? '#fff' : 'var(--text)',
+                          fontWeight: selected ? 600 : 400,
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {selectedEditors.length > 0 && (
+                <p style={{ fontSize: 11, color: 'var(--text3)', margin: '6px 0 0' }}>
+                  Selected: {selectedEditors.join(', ')}
+                </p>
+              )}
             </div>
+
             <div className="form-group">
               <label>Status</label>
               <select value={status} onChange={e => setStatus(e.target.value as Status)}>
