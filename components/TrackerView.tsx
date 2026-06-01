@@ -28,14 +28,14 @@ function DateChip({ value, isDone }: { value: string; isDone?: boolean }) {
 
   const st = isDone ? 'done' : dateStatus(value);
   const styles: Record<string, { bg: string; color: string; border: string }> = {
-    done:     { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
-    overdue:  { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
-    today:    { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa' },
-    soon:     { bg: '#fefce8', color: '#ca8a04', border: '#fef08a' },
-    upcoming: { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
+    done:     { bg: '#f4f4f5', color: '#71717a', border: '#e4e4e7' },
+    overdue:  { bg: '#fdf2f2', color: '#b45454', border: '#f0d0d0' },
+    today:    { bg: '#f0f4ff', color: '#4f6fbd', border: '#d0dcf5' },
+    soon:     { bg: '#fdf8f0', color: '#a07840', border: '#eddfc0' },
+    upcoming: { bg: '#f7f7f8', color: '#52525b', border: '#e4e4e7' },
   };
   const s = styles[st] || styles.upcoming;
-  const label = st === 'overdue' ? '⚠ ' : st === 'today' ? '● ' : '';
+  const label = st === 'overdue' ? '! ' : st === 'today' ? '· ' : '';
 
   return (
     <span style={{
