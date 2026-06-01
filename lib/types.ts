@@ -16,7 +16,7 @@ export interface Project {
   d2: string;
   d3: string;
   other: string;
-  sort_order: number;
+  sort_order?: number;
 }
 
 export interface Clients {
