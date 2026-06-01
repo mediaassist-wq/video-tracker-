@@ -4,7 +4,7 @@ import { useApp } from '@/context/AppContext';
 import AddClientModal from './modals/AddClientModal';
 import ConfirmModal from './modals/ConfirmModal';
 
-export default function Sidebar({ onClientSelect }: { onClientSelect?: () => void }) {
+export default function Sidebar({ onClientSelect, isOpen }: { onClientSelect?: () => void; isOpen?: boolean }) {
   const { ws, clients, setClients, projects, selClient, setSelClient, currentUser } = useApp();
   const isAdmin = currentUser?.role === 'admin';
   const [showAdd, setShowAdd] = useState(false);
@@ -26,7 +26,7 @@ export default function Sidebar({ onClientSelect }: { onClientSelect?: () => voi
 
   return (
     <>
-      <div className="sidebar">
+      <div className={`sidebar${isOpen ? ' open' : ''}`}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, padding: '0 4px' }}>
           <span className="mono" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--text3)' }}>
             {ws} Clients

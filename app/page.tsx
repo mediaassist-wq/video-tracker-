@@ -23,14 +23,11 @@ function AppShell() {
       <div className="main-area">
         {showSidebar && (
           <>
-            {/* Overlay for mobile */}
             <div
               className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`}
               onClick={() => setSidebarOpen(false)}
             />
-            <div className={`sidebar${sidebarOpen ? ' open' : ''}`}>
-              <Sidebar onClientSelect={() => setSidebarOpen(false)} />
-            </div>
+            <Sidebar isOpen={sidebarOpen} onClientSelect={() => setSidebarOpen(false)} />
           </>
         )}
         <div className="content-area">
