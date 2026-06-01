@@ -165,7 +165,7 @@ export default function TrackerView() {
                 <td><PriChip priority={p.priority} /></td>
                 <td>
                   <div className="row-actions">
-                    <button className="icon-btn" onClick={() => setEditProj(p)} title="Edit">✏️</button>
+                    {isAdmin && <button className="icon-btn" onClick={() => setEditProj(p)} title="Edit">✏️</button>}
                     {isAdmin && (
                       <button className="icon-btn danger" onClick={() => setDeleteProj(p)} title="Delete">🗑</button>
                     )}
