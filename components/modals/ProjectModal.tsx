@@ -18,9 +18,11 @@ export default function ProjectModal({ project, onClose }: Props) {
   const [ws, setWs] = useState<WorkspaceId>(project?.ws || globalWs);
   const [cl, setCl] = useState(project?.cl || selClient || clients[globalWs][0] || '');
   const [title, setTitle] = useState(project?.title || '');
-  // editors stored as comma-separated string; parse into array for UI
+  // editors stored as comma-separated string; only keep names that exist in editorNames list
   const [selectedEditors, setSelectedEditors] = useState<string[]>(
-    project?.editor ? project.editor.split(',').map(s => s.trim()).filter(Boolean) : []
+    project?.editor
+      ? project.editor.split(',').map(s => s.trim()).filter(s => editorNames.includes(s))
+      : []
   );
   const [status, setStatus] = useState<Status>(project?.status || 'Pending');
   const [priority, setPriority] = useState<Priority>(project?.priority || '');
