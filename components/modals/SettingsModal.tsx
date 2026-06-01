@@ -1,8 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { hashStr, getUsers, saveUsers, login } from '@/lib/auth';
-import type { Users } from '@/lib/types';
+import { hashStr, getUsersFromDB, upsertUserInDB, deleteUserFromDB } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
+import type { Users, Role } from '@/lib/types';
 import AddUserModal from './AddUserModal';
 import ConfirmModal from './ConfirmModal';
 
@@ -20,43 +21,48 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [showAddUser, setShowAddUser] = useState(false);
   const [deleteUser, setDeleteUser] = useState<string | null>(null);
 
-  useEffect(() => { setUsers(getUsers()); }, []);
+  useEffect(() => {
+    getUsersFromDB().then(setUsers);
+  }, []);
 
   async function changePassword() {
     if (!pwCurrent || !pwNew || !pwConfirm) { setPwMsg('All fields required.'); return; }
     if (pwNew.length < 6) { setPwMsg('New password must be at least 6 characters.'); return; }
     if (pwNew !== pwConfirm) { setPwMsg('New passwords do not match.'); return; }
-    const allUsers = getUsers();
-    const user = allUsers[currentUser!.username];
-    if (!user) { setPwMsg('User not found.'); return; }
+
+    // Verify current password against DB
+    const { data } = await supabase.from('users').select('hash').eq('username', currentUser!.username).maybeSingle();
+    if (!data) { setPwMsg('User not found.'); return; }
     const currentHash = await hashStr(pwCurrent);
-    if (currentHash !== user.hash) { setPwMsg('Current password is incorrect.'); return; }
+    if (currentHash !== data.hash) { setPwMsg('Current password is incorrect.'); return; }
+
+    // Save new password
     const newHash = await hashStr(pwNew);
-    allUsers[currentUser!.username].hash = newHash;
-    saveUsers(allUsers);
+    await upsertUserInDB(currentUser!.username, newHash, currentUser!.role);
     setPwCurrent(''); setPwNew(''); setPwConfirm('');
     setPwMsg('✓ Password changed successfully.');
   }
 
   async function changeUsername() {
     if (!newUsername.trim() || !unPw) { setUnMsg('All fields required.'); return; }
-    const allUsers = getUsers();
-    if (allUsers[newUsername.trim()]) { setUnMsg('Username already taken.'); return; }
-    const user = allUsers[currentUser!.username];
+    const existing = await supabase.from('users').select('username').eq('username', newUsername.trim()).maybeSingle();
+    if (existing.data) { setUnMsg('Username already taken.'); return; }
+
+    const { data } = await supabase.from('users').select('hash,role').eq('username', currentUser!.username).maybeSingle();
+    if (!data) { setUnMsg('User not found.'); return; }
     const hash = await hashStr(unPw);
-    if (hash !== user.hash) { setUnMsg('Incorrect password.'); return; }
-    allUsers[newUsername.trim()] = { ...user };
-    delete allUsers[currentUser!.username];
-    saveUsers(allUsers);
+    if (hash !== data.hash) { setUnMsg('Incorrect password.'); return; }
+
+    // Insert new username, delete old
+    await upsertUserInDB(newUsername.trim(), data.hash, data.role as Role);
+    await deleteUserFromDB(currentUser!.username);
     setUnMsg('✓ Username changed. Please log in again.');
-    setUsers({ ...allUsers });
+    getUsersFromDB().then(setUsers);
   }
 
-  function doDeleteUser(username: string) {
-    const allUsers = getUsers();
-    delete allUsers[username];
-    saveUsers(allUsers);
-    setUsers({ ...allUsers });
+  async function doDeleteUser(username: string) {
+    await deleteUserFromDB(username);
+    getUsersFromDB().then(setUsers);
     setDeleteUser(null);
   }
 
@@ -69,6 +75,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
             <button className="icon-btn" onClick={onClose}>✕</button>
           </div>
           <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Current user info */}
             <div style={{ background: 'var(--bg3)', borderRadius: 'var(--r)', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 13, color: 'var(--text2)' }}>Logged in as:</span>
               <span style={{ fontWeight: 600, fontSize: 13 }}>{currentUser?.username}</span>
@@ -79,6 +86,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
               }}>{currentUser?.role}</span>
             </div>
 
+            {/* Change Password */}
             <div>
               <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Change My Password</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -90,6 +98,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
               </div>
             </div>
 
+            {/* Change Username */}
             <div>
               <h4 style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Change Username</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -100,6 +109,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
               </div>
             </div>
 
+            {/* User Management (admin only) */}
             {isAdmin && (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -136,7 +146,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
       {showAddUser && (
         <AddUserModal
           onClose={() => setShowAddUser(false)}
-          onDone={() => setUsers(getUsers())}
+          onDone={() => getUsersFromDB().then(setUsers)}
         />
       )}
       {deleteUser && (

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { hashStr, getUsers, saveUsers } from '@/lib/auth';
+import { hashStr, upsertUserInDB, getUsersFromDB } from '@/lib/auth';
 import type { Role } from '@/lib/types';
 
 export default function AddUserModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
@@ -12,11 +12,10 @@ export default function AddUserModal({ onClose, onDone }: { onClose: () => void;
   async function create() {
     if (!username.trim()) { setError('Username required.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    const users = getUsers();
-    if (users[username.trim()]) { setError('Username already exists.'); return; }
+    const existing = await getUsersFromDB();
+    if (existing[username.trim()]) { setError('Username already exists.'); return; }
     const hash = await hashStr(password);
-    users[username.trim()] = { hash, role };
-    saveUsers(users);
+    await upsertUserInDB(username.trim(), hash, role);
     onDone();
     onClose();
   }
