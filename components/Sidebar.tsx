@@ -9,6 +9,7 @@ export default function Sidebar() {
   const isAdmin = currentUser?.role === 'admin';
   const [showAdd, setShowAdd] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [hoveredClient, setHoveredClient] = useState<string | null>(null);
 
   const list = clients[ws] || [];
 
@@ -37,47 +38,85 @@ export default function Sidebar() {
           )}
         </div>
 
-        {list.map(cl => (
-          <div
-            key={cl}
-            style={{ display: 'flex', alignItems: 'center', borderRadius: 'var(--r)', overflow: 'hidden', marginBottom: 2 }}
-            className="sidebar-row"
-          >
-            <button
-              onClick={() => setSelClient(cl)}
-              style={{
-                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '6px 8px', border: 'none', borderRadius: 'var(--r)',
-                background: selClient === cl ? 'var(--accent)' : 'transparent',
-                color: selClient === cl ? 'var(--bg2)' : 'var(--text)',
-                fontSize: 13, textAlign: 'left', transition: 'all .1s', cursor: 'pointer',
-              }}
-              onMouseEnter={e => { if (selClient !== cl) (e.currentTarget as HTMLElement).style.background = 'var(--bg4)'; }}
-              onMouseLeave={e => { if (selClient !== cl) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+        {list.map(cl => {
+          const isActive = selClient === cl;
+          const isHovered = hoveredClient === cl;
+          return (
+            <div
+              key={cl}
+              style={{ display: 'flex', alignItems: 'center', marginBottom: 2, borderRadius: 'var(--r)', overflow: 'hidden' }}
+              onMouseEnter={() => setHoveredClient(cl)}
+              onMouseLeave={() => setHoveredClient(null)}
             >
-              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13 }}>
-                {cl}
-              </span>
-              <span style={{
-                background: selClient === cl ? 'rgba(255,255,255,.2)' : 'var(--bg4)',
-                color: selClient === cl ? 'var(--bg2)' : 'var(--text3)',
-                borderRadius: 10, padding: '0 5px', fontSize: 10, minWidth: 18, textAlign: 'center',
-                fontFamily: 'DM Mono, monospace',
-              }}>
-                {countForClient(cl)}
-              </span>
-            </button>
-            {isAdmin && (
+              {/* Client button */}
               <button
-                className="icon-btn danger"
-                style={{ opacity: 0, marginLeft: 2, fontSize: 12 }}
-                onClick={() => setDeleteTarget(cl)}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '0'}
-              >✕</button>
-            )}
-          </div>
-        ))}
+                onClick={() => setSelClient(cl)}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 4,
+                  padding: '6px 8px',
+                  border: 'none',
+                  borderRadius: 'var(--r)',
+                  background: isActive ? 'var(--accent)' : isHovered ? 'var(--bg4)' : 'transparent',
+                  color: isActive ? 'var(--bg2)' : 'var(--text)',
+                  fontSize: 13,
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  transition: 'all .1s',
+                  overflow: 'hidden',
+                }}
+              >
+                <span style={{
+                  flex: 1,
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 13,
+                }}>
+                  {cl}
+                </span>
+                <span style={{
+                  flexShrink: 0,
+                  background: isActive ? 'rgba(255,255,255,.2)' : 'var(--bg5)',
+                  color: isActive ? 'var(--bg2)' : 'var(--text3)',
+                  borderRadius: 10,
+                  padding: '0 5px',
+                  fontSize: 10,
+                  minWidth: 18,
+                  textAlign: 'center',
+                  fontFamily: 'DM Mono, monospace',
+                }}>
+                  {countForClient(cl)}
+                </span>
+              </button>
+
+              {/* Remove button — always rendered, visible on hover */}
+              {isAdmin && (
+                <button
+                  className="icon-btn danger"
+                  style={{
+                    flexShrink: 0,
+                    opacity: isHovered ? 1 : 0,
+                    marginLeft: 2,
+                    fontSize: 11,
+                    padding: '4px 5px',
+                    transition: 'opacity .15s',
+                    pointerEvents: isHovered ? 'auto' : 'none',
+                  }}
+                  onClick={e => { e.stopPropagation(); setDeleteTarget(cl); }}
+                  title="Remove client"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          );
+        })}
 
         {list.length === 0 && (
           <p style={{ fontSize: 12, color: 'var(--text3)', padding: '8px 4px' }}>No clients yet.</p>
