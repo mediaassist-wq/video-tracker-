@@ -7,6 +7,18 @@ export function fmtDate(d: string): string {
   return `${day}/${m}/${y.slice(2)}`;
 }
 
+// Returns: 'overdue' | 'today' | 'soon' (≤3 days) | 'upcoming' | 'empty'
+export function dateStatus(d: string): 'overdue' | 'today' | 'soon' | 'upcoming' | 'empty' {
+  if (!d) return 'empty';
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const date  = new Date(d); date.setHours(0, 0, 0, 0);
+  const diff  = Math.round((date.getTime() - today.getTime()) / 86400000);
+  if (diff < 0)  return 'overdue';
+  if (diff === 0) return 'today';
+  if (diff <= 3)  return 'soon';
+  return 'upcoming';
+}
+
 export function getProjMonth(p: { d1: string; d2: string; d3: string }): string {
   const d = p.d2 || p.d1 || p.d3;
   if (!d) return '';

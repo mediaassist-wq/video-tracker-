@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
-import { fmtDate, STATUS_STYLES, PRIORITY_STYLES, WS_CFG, monthLabel, getProjMonth } from '@/lib/helpers';
+import { fmtDate, dateStatus, STATUS_STYLES, PRIORITY_STYLES, WS_CFG, monthLabel, getProjMonth } from '@/lib/helpers';
 import type { Project, Status, Priority } from '@/lib/types';
 import ProjectModal from './modals/ProjectModal';
 import ConfirmModal from './modals/ConfirmModal';
@@ -19,6 +19,32 @@ function StatusPill({ status }: { status: Status }) {
   return (
     <span className="status-pill" style={{ background: s.bg, color: s.color, borderColor: s.border }}>
       {status}
+    </span>
+  );
+}
+
+function DateChip({ value, isDone }: { value: string; isDone?: boolean }) {
+  if (!value) return <span style={{ color: 'var(--text4)', fontSize: 12 }}>—</span>;
+
+  const st = isDone ? 'done' : dateStatus(value);
+  const styles: Record<string, { bg: string; color: string; border: string }> = {
+    done:     { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
+    overdue:  { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+    today:    { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa' },
+    soon:     { bg: '#fefce8', color: '#ca8a04', border: '#fef08a' },
+    upcoming: { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
+  };
+  const s = styles[st] || styles.upcoming;
+  const label = st === 'overdue' ? '⚠ ' : st === 'today' ? '● ' : '';
+
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center',
+      background: s.bg, color: s.color, border: `1px solid ${s.border}`,
+      borderRadius: 6, padding: '3px 8px', fontSize: 11,
+      fontFamily: 'DM Mono, monospace', fontWeight: 600, whiteSpace: 'nowrap',
+    }}>
+      {label}{fmtDate(value)}
     </span>
   );
 }
@@ -63,9 +89,9 @@ function SortableRow({
       </td>
       <td className="mono" style={{ fontSize: 12, color: 'var(--text2)' }}>{p.editor}</td>
       <td><StatusPill status={p.status} /></td>
-      <td className="mono" style={{ fontSize: 11, color: 'var(--text3)' }}>{fmtDate(p.d1)}</td>
-      <td className="mono" style={{ fontSize: 11, color: 'var(--text3)' }}>{fmtDate(p.d2)}</td>
-      <td className="mono" style={{ fontSize: 11, color: 'var(--text3)' }}>{fmtDate(p.d3)}</td>
+      <td><DateChip value={p.d1} isDone={p.status === 'Done'} /></td>
+      <td><DateChip value={p.d2} isDone={p.status === 'Done'} /></td>
+      <td><DateChip value={p.d3} isDone={p.status === 'Done'} /></td>
       <td><PriChip priority={p.priority} /></td>
       <td>
         <div className="row-actions">
