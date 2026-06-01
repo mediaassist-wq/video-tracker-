@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 interface AppState {
   projects: Project[];
   clients: Clients;
+  editorNames: string[];
   ws: WorkspaceId;
   selClient: string;
   view: View;
@@ -17,6 +18,8 @@ interface AppState {
   saveStatus: 'idle' | 'saving' | 'saved';
   setProjects: (p: Project[]) => Promise<void>;
   setClients: (c: Clients) => Promise<void>;
+  addEditorName: (name: string) => Promise<void>;
+  removeEditorName: (name: string) => Promise<void>;
   setWs: (w: WorkspaceId) => void;
   setSelClient: (c: string) => void;
   setView: (v: View) => void;
@@ -29,6 +32,7 @@ const AppContext = createContext<AppState | null>(null);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjectsRaw] = useState<Project[]>([]);
   const [clients, setClientsRaw] = useState<Clients>({ OBM: [], CFM: [] });
+  const [editorNames, setEditorNames] = useState<string[]>([]);
   const [ws, setWs] = useState<WorkspaceId>('OBM');
   const [selClient, setSelClient] = useState('');
   const [view, setView] = useState<View>('tracker');
@@ -40,7 +44,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const projectsRef = useRef<Project[]>([]);
   const clientsRef = useRef<Clients>({ OBM: [], CFM: [] });
 
-  // keep refs in sync for diff calculations
   useEffect(() => { projectsRef.current = projects; }, [projects]);
   useEffect(() => { clientsRef.current = clients; }, [clients]);
 
@@ -59,14 +62,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const savedTheme = lsGet<string>('vt-theme', '');
       setThemeRaw(savedTheme);
 
-      // Load projects
       const { data: dbProjects } = await supabase.from('projects').select('*');
-      // Load clients
       const { data: dbClients } = await supabase.from('clients').select('*');
+      const { data: dbEditors } = await supabase.from('editors').select('*');
 
-      // If DB is empty → seed
       if (!dbProjects || dbProjects.length === 0) {
-        // Insert seed projects
         await supabase.from('projects').insert(SEED_PROJECTS);
         setProjectsRaw(SEED_PROJECTS);
         projectsRef.current = SEED_PROJECTS;
@@ -75,9 +75,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         projectsRef.current = dbProjects as Project[];
       }
 
-      // Build clients object from DB rows
       if (!dbClients || dbClients.length === 0) {
-        // Insert default clients
         const rows = [
           ...DEFAULT_CLIENTS.OBM.map(name => ({ ws: 'OBM', name })),
           ...DEFAULT_CLIENTS.CFM.map(name => ({ ws: 'CFM', name })),
@@ -93,6 +91,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         });
         setClientsRaw(built);
         clientsRef.current = built;
+      }
+
+      if (dbEditors) {
+        setEditorNames((dbEditors as { name: string }[]).map(e => e.name).sort());
       }
 
       setReady(true);
@@ -122,7 +124,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const clientsSub = supabase
       .channel('clients-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
-        // refetch clients on any change
         supabase.from('clients').select('*').then(({ data }) => {
           if (!data) return;
           const built: Clients = { OBM: [], CFM: [] };
@@ -136,7 +137,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       })
       .subscribe();
 
-    // Watch for user deletion or username changes — force logout if current user is removed
+    const editorsSub = supabase
+      .channel('editors-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'editors' }, () => {
+        supabase.from('editors').select('*').then(({ data }) => {
+          if (!data) return;
+          setEditorNames((data as { name: string }[]).map(e => e.name).sort());
+        });
+      })
+      .subscribe();
+
     const usersSub = supabase
       .channel('users-changes')
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'users' }, payload => {
@@ -151,11 +161,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => {
       supabase.removeChannel(projectsSub);
       supabase.removeChannel(clientsSub);
+      supabase.removeChannel(editorsSub);
       supabase.removeChannel(usersSub);
     };
   }, [ready]);
 
-  // ── setProjects: diff + sync to Supabase ─────────────────────────────────
+  // ── setProjects ───────────────────────────────────────────────────────────
   const setProjects = useCallback(async (newProjects: Project[]) => {
     const old = projectsRef.current;
     const oldMap = new Map(old.map(p => [p.id, p]));
@@ -177,7 +188,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     for (const p of toUpdate) await supabase.from('projects').update(p).eq('id', p.id);
   }, [triggerSave]);
 
-  // ── setClients: diff + sync to Supabase ──────────────────────────────────
+  // ── setClients ────────────────────────────────────────────────────────────
   const setClients = useCallback(async (newClients: Clients) => {
     const old = clientsRef.current;
     const wsKeys: WorkspaceId[] = ['OBM', 'CFM'];
@@ -195,6 +206,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       for (const name of added) await supabase.from('clients').insert({ ws: w, name });
     }
   }, [triggerSave]);
+
+  // ── editors ───────────────────────────────────────────────────────────────
+  const addEditorName = useCallback(async (name: string) => {
+    await supabase.from('editors').insert({ name });
+    setEditorNames(prev => [...prev, name].sort());
+  }, []);
+
+  const removeEditorName = useCallback(async (name: string) => {
+    await supabase.from('editors').delete().eq('name', name);
+    setEditorNames(prev => prev.filter(n => n !== name));
+  }, []);
 
   const setTheme = useCallback((t: string) => {
     setThemeRaw(prev => {
@@ -215,8 +237,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      projects, clients, ws, selClient, view, currentUser, theme, saveStatus,
-      setProjects, setClients, setWs, setSelClient, setView, setCurrentUser, setTheme,
+      projects, clients, editorNames, ws, selClient, view, currentUser, theme, saveStatus,
+      setProjects, setClients, addEditorName, removeEditorName, setWs, setSelClient, setView, setCurrentUser, setTheme,
     }}>
       {children}
     </AppContext.Provider>

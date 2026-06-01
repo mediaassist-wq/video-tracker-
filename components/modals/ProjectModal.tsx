@@ -13,7 +13,7 @@ const STATUSES: Status[] = ['Done', 'Full- Running', 'Revision', 'Waiting', 'Pen
 const PRIORITIES: Priority[] = ['', 'HIGH', 'MEDIUM', 'LOW'];
 
 export default function ProjectModal({ project, onClose }: Props) {
-  const { projects, setProjects, clients, ws: globalWs, selClient } = useApp();
+  const { projects, setProjects, clients, editorNames, ws: globalWs, selClient } = useApp();
 
   const [ws, setWs] = useState<WorkspaceId>(project?.ws || globalWs);
   const [cl, setCl] = useState(project?.cl || selClient || clients[globalWs][0] || '');
@@ -73,7 +73,10 @@ export default function ProjectModal({ project, onClose }: Props) {
             </div>
             <div className="form-group">
               <label>Editor</label>
-              <input value={editor} onChange={e => setEditor(e.target.value)} placeholder="Editor name" />
+              <select value={editor} onChange={e => setEditor(e.target.value)}>
+                <option value="">— Select Editor —</option>
+                {editorNames.map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
             </div>
             <div className="form-group">
               <label>Status</label>

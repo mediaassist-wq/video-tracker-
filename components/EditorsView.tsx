@@ -1,9 +1,12 @@
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 
 export default function EditorsView() {
-  const { projects } = useApp();
+  const { projects, editorNames, addEditorName, removeEditorName, currentUser } = useApp();
+  const isAdmin = currentUser?.role === 'admin';
+  const [newName, setNewName] = useState('');
+  const [err, setErr] = useState('');
 
   const editors = useMemo(() => {
     const map = new Map<string, { done: number; inProg: number; pend: number; total: number }>();
@@ -25,11 +28,61 @@ export default function EditorsView() {
   const avgPerEditor = totalEditors ? Math.round(editors.reduce((s, e) => s + e.total, 0) / totalEditors) : 0;
   const maxTotal = Math.max(...editors.map(e => e.total), 1);
 
+  async function handleAdd() {
+    const name = newName.trim();
+    if (!name) { setErr('Name is required.'); return; }
+    if (editorNames.includes(name)) { setErr('Already exists.'); return; }
+    await addEditorName(name);
+    setNewName(''); setErr('');
+  }
+
   return (
     <div className="views-scroll">
       <div style={{ padding: '12px 16px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)' }}>
         <h2 style={{ fontSize: 16, fontWeight: 600 }}>Editors Overview</h2>
       </div>
+
+      {/* Editor Management (admin only) */}
+      {isAdmin && (
+        <div className="section-panel" style={{ margin: '16px 16px 0' }}>
+          <div className="section-header">
+            <span style={{ fontSize: 13, fontWeight: 600 }}>Manage Editors</span>
+          </div>
+          <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                value={newName}
+                onChange={e => { setNewName(e.target.value); setErr(''); }}
+                onKeyDown={e => e.key === 'Enter' && handleAdd()}
+                placeholder="Editor name"
+                style={{ flex: 1 }}
+              />
+              <button className="btn btn-dark" onClick={handleAdd}>+ Add</button>
+            </div>
+            {err && <p style={{ fontSize: 12, color: '#dc2626', margin: 0 }}>{err}</p>}
+            {editorNames.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {editorNames.map(name => (
+                  <div key={name} style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    background: 'var(--bg3)', border: '1px solid var(--border)',
+                    borderRadius: 6, padding: '4px 10px', fontSize: 13,
+                  }}>
+                    <span>{name}</span>
+                    <button
+                      onClick={() => removeEditorName(name)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 13, padding: 0, lineHeight: 1 }}
+                    >✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {editorNames.length === 0 && (
+              <p style={{ fontSize: 12, color: 'var(--text3)', margin: 0 }}>No editors added yet.</p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="kpi-grid">
         {[
