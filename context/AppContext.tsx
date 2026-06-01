@@ -18,6 +18,7 @@ interface AppState {
   saveStatus: 'idle' | 'saving' | 'saved';
   setProjects: (p: Project[]) => Promise<void>;
   setClients: (c: Clients) => Promise<void>;
+  reorderClients: (ws: WorkspaceId, newList: string[]) => Promise<void>;
   addEditorName: (name: string) => Promise<void>;
   removeEditorName: (name: string) => Promise<void>;
   setWs: (w: WorkspaceId) => void;
@@ -85,7 +86,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         clientsRef.current = DEFAULT_CLIENTS;
       } else {
         const built: Clients = { OBM: [], CFM: [] };
-        (dbClients as { ws: string; name: string }[]).forEach(r => {
+        const sorted = [...(dbClients as { ws: string; name: string; sort_order: number }[])]
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        sorted.forEach(r => {
           if (r.ws === 'OBM') built.OBM.push(r.name);
           else if (r.ws === 'CFM') built.CFM.push(r.name);
         });
@@ -207,6 +210,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [triggerSave]);
 
+  // ── reorderClients ───────────────────────────────────────────────────────
+  const reorderClients = useCallback(async (w: WorkspaceId, newList: string[]) => {
+    const updated = { ...clientsRef.current, [w]: newList };
+    setClientsRaw(updated);
+    clientsRef.current = updated;
+    triggerSave();
+    for (let i = 0; i < newList.length; i++) {
+      await supabase.from('clients').update({ sort_order: i }).eq('ws', w).eq('name', newList[i]);
+    }
+  }, [triggerSave]);
+
   // ── editors ───────────────────────────────────────────────────────────────
   const addEditorName = useCallback(async (name: string) => {
     await supabase.from('editors').insert({ name });
@@ -238,7 +252,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider value={{
       projects, clients, editorNames, ws, selClient, view, currentUser, theme, saveStatus,
-      setProjects, setClients, addEditorName, removeEditorName, setWs, setSelClient, setView, setCurrentUser, setTheme,
+      setProjects, setClients, reorderClients, addEditorName, removeEditorName, setWs, setSelClient, setView, setCurrentUser, setTheme,
     }}>
       {children}
     </AppContext.Provider>

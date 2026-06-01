@@ -5,6 +5,14 @@ import { fmtDate, STATUS_STYLES, PRIORITY_STYLES, WS_CFG, monthLabel, getProjMon
 import type { Project, Status, Priority } from '@/lib/types';
 import ProjectModal from './modals/ProjectModal';
 import ConfirmModal from './modals/ConfirmModal';
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 function StatusPill({ status }: { status: Status }) {
   const s = STATUS_STYLES[status];
@@ -25,17 +33,65 @@ function PriChip({ priority }: { priority: Priority }) {
   );
 }
 
+function SortableRow({
+  p, i, isAdmin, onEdit, onDelete,
+}: {
+  p: Project; i: number; isAdmin: boolean;
+  onEdit: (p: Project) => void; onDelete: (p: Project) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id });
+  const cfg = WS_CFG[p.ws];
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        background: isDragging ? 'var(--bg3)' : undefined,
+      }}
+    >
+      <td className="mono" style={{ color: 'var(--text3)', fontSize: 11 }}>{i + 1}</td>
+      <td style={{ maxWidth: 300 }}>
+        <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {p.title}
+        </div>
+        {p.other && (
+          <div className="mono" style={{ fontSize: 10, color: 'var(--kish)', marginTop: 2 }}>{p.other}</div>
+        )}
+      </td>
+      <td className="mono" style={{ fontSize: 12, color: 'var(--text2)' }}>{p.editor}</td>
+      <td><StatusPill status={p.status} /></td>
+      <td className="mono" style={{ fontSize: 11, color: 'var(--text3)' }}>{fmtDate(p.d1)}</td>
+      <td className="mono" style={{ fontSize: 11, color: 'var(--text3)' }}>{fmtDate(p.d2)}</td>
+      <td className="mono" style={{ fontSize: 11, color: 'var(--text3)' }}>{fmtDate(p.d3)}</td>
+      <td><PriChip priority={p.priority} /></td>
+      <td>
+        <div className="row-actions">
+          {isAdmin && (
+            <span
+              {...attributes} {...listeners}
+              title="Drag to reorder"
+              style={{ cursor: 'grab', color: 'var(--text3)', fontSize: 14, padding: '0 2px', touchAction: 'none' }}
+            >⠿</span>
+          )}
+          {isAdmin && <button className="icon-btn" onClick={() => onEdit(p)} title="Edit">✏️</button>}
+          {isAdmin && <button className="icon-btn danger" onClick={() => onDelete(p)} title="Delete">🗑</button>}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 export default function TrackerView() {
   const { projects, setProjects, ws, selClient, setSelClient, clients, currentUser } = useApp();
   const isAdmin = currentUser?.role === 'admin';
   const cfg = WS_CFG[ws];
 
-  // Auto-select first client
   useEffect(() => {
     const list = clients[ws] || [];
-    if (!selClient || !list.includes(selClient)) {
-      setSelClient(list[0] || '');
-    }
+    if (!selClient || !list.includes(selClient)) setSelClient(list[0] || '');
   }, [ws, clients]);
 
   const [search, setSearch] = useState('');
@@ -46,7 +102,15 @@ export default function TrackerView() {
   const [editProj, setEditProj] = useState<Project | null>(null);
   const [deleteProj, setDeleteProj] = useState<Project | null>(null);
 
-  const clientProjects = projects.filter(p => p.ws === ws && p.cl === selClient);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  // sorted by sort_order
+  const clientProjects = useMemo(() =>
+    projects
+      .filter(p => p.ws === ws && p.cl === selClient)
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+    [projects, ws, selClient]
+  );
 
   const availableMonths = useMemo(() => {
     const months = new Set(clientProjects.map(getProjMonth).filter(Boolean));
@@ -63,6 +127,8 @@ export default function TrackerView() {
     });
   }, [clientProjects, search, filterStatus, filterPriority, filterMonth]);
 
+  const isFiltering = !!(search || filterStatus || filterPriority || filterMonth);
+
   const statusCounts = useMemo(() => {
     const counts: Partial<Record<Status, number>> = {};
     clientProjects.forEach(p => { counts[p.status] = (counts[p.status] || 0) + 1; });
@@ -72,6 +138,24 @@ export default function TrackerView() {
   function deleteProject(id: string) {
     setProjects(projects.filter(p => p.id !== id));
     setDeleteProj(null);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = clientProjects.findIndex(p => p.id === active.id);
+    const newIndex = clientProjects.findIndex(p => p.id === over.id);
+    const reordered = arrayMove(clientProjects, oldIndex, newIndex).map((p, i) => ({
+      ...p, sort_order: i,
+    }));
+
+    // merge back into full projects list
+    const updated = projects.map(p => {
+      const r = reordered.find(r => r.id === p.id);
+      return r ?? p;
+    });
+    setProjects(updated);
   }
 
   const statuses: Status[] = ['Done', 'Full- Running', 'Revision', 'Waiting', 'Pending', 'Kishan'];
@@ -134,46 +218,38 @@ export default function TrackerView() {
               <th>{cfg.d2}</th>
               <th>{cfg.d3}</th>
               <th>Priority</th>
-              <th style={{ width: 80 }}></th>
+              <th style={{ width: 100 }}></th>
             </tr>
           </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={9} style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text3)' }}>
-                  📭 No projects found.
-                </td>
-              </tr>
-            ) : filtered.map((p, i) => (
-              <tr key={p.id}>
-                <td className="mono" style={{ color: 'var(--text3)', fontSize: 11 }}>{i + 1}</td>
-                <td style={{ maxWidth: 300 }}>
-                  <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {p.title}
-                  </div>
-                  {p.other && (
-                    <div className="mono" style={{ fontSize: 10, color: 'var(--kish)', marginTop: 2 }}>
-                      {p.other}
-                    </div>
-                  )}
-                </td>
-                <td className="mono" style={{ fontSize: 12, color: 'var(--text2)' }}>{p.editor}</td>
-                <td><StatusPill status={p.status} /></td>
-                <td className="mono" style={{ fontSize: 11, color: 'var(--text3)' }}>{fmtDate(p.d1)}</td>
-                <td className="mono" style={{ fontSize: 11, color: 'var(--text3)' }}>{fmtDate(p.d2)}</td>
-                <td className="mono" style={{ fontSize: 11, color: 'var(--text3)' }}>{fmtDate(p.d3)}</td>
-                <td><PriChip priority={p.priority} /></td>
-                <td>
-                  <div className="row-actions">
-                    {isAdmin && <button className="icon-btn" onClick={() => setEditProj(p)} title="Edit">✏️</button>}
-                    {isAdmin && (
-                      <button className="icon-btn danger" onClick={() => setDeleteProj(p)} title="Delete">🗑</button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+          {isFiltering ? (
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text3)' }}>
+                    📭 No projects found.
+                  </td>
+                </tr>
+              ) : filtered.map((p, i) => (
+                <SortableRow key={p.id} p={p} i={i} isAdmin={isAdmin} onEdit={setEditProj} onDelete={setDeleteProj} />
+              ))}
+            </tbody>
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={filtered.map(p => p.id)} strategy={verticalListSortingStrategy}>
+                <tbody>
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text3)' }}>
+                        📭 No projects found.
+                      </td>
+                    </tr>
+                  ) : filtered.map((p, i) => (
+                    <SortableRow key={p.id} p={p} i={i} isAdmin={isAdmin} onEdit={setEditProj} onDelete={setDeleteProj} />
+                  ))}
+                </tbody>
+              </SortableContext>
+            </DndContext>
+          )}
         </table>
       </div>
 
