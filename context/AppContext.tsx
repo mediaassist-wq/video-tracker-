@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import type { Project, Clients, SessionUser, WorkspaceId, View } from '@/lib/types';
+import type { Project, Clients, SessionUser, WorkspaceId, View, Comment, ActivityLog } from '@/lib/types';
 import { lsGet, lsSet } from '@/lib/storage';
 import { getSession, initDefaultUser, logout } from '@/lib/auth';
 import { DEFAULT_CLIENTS, SEED_PROJECTS } from '@/lib/data';
@@ -26,6 +26,10 @@ interface AppState {
   setView: (v: View) => void;
   setCurrentUser: (u: SessionUser | null) => void;
   setTheme: (t: string) => void;
+  comments: Comment[];
+  addComment: (projectId: string, text: string) => Promise<void>;
+  activityLog: ActivityLog[];
+  logActivity: (action: string, details: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -34,6 +38,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjectsRaw] = useState<Project[]>([]);
   const [clients, setClientsRaw] = useState<Clients>({ OBM: [], CFM: [] });
   const [editorNames, setEditorNames] = useState<string[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
   const [ws, setWs] = useState<WorkspaceId>('OBM');
   const [selClient, setSelClient] = useState('');
   const [view, setView] = useState<View>('tracker');
@@ -99,6 +105,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (dbEditors) {
         setEditorNames((dbEditors as { name: string }[]).map(e => e.name).sort());
       }
+
+      const { data: dbComments } = await supabase.from('comments').select('*').order('created_at', { ascending: true });
+      if (dbComments) setComments(dbComments as Comment[]);
+
+      const { data: dbLogs } = await supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(100);
+      if (dbLogs) setActivityLog(dbLogs as ActivityLog[]);
 
       setReady(true);
     });
@@ -221,6 +233,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [triggerSave]);
 
+  // ── comments ─────────────────────────────────────────────────────────────
+  const addComment = useCallback(async (projectId: string, text: string) => {
+    const session = getSession();
+    if (!session) return;
+    const id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const comment: Comment = { id, project_id: projectId, username: session.username, text, created_at: new Date().toISOString() };
+    await supabase.from('comments').insert(comment);
+    setComments(prev => [...prev, comment]);
+  }, []);
+
+  // ── activity log ──────────────────────────────────────────────────────────
+  const logActivity = useCallback(async (action: string, details: string) => {
+    const session = getSession();
+    if (!session) return;
+    const id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const entry: ActivityLog = { id, username: session.username, action, details, created_at: new Date().toISOString() };
+    await supabase.from('activity_log').insert(entry);
+    setActivityLog(prev => [entry, ...prev].slice(0, 100));
+  }, []);
+
   // ── editors ───────────────────────────────────────────────────────────────
   const addEditorName = useCallback(async (name: string) => {
     await supabase.from('editors').insert({ name });
@@ -252,6 +284,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider value={{
       projects, clients, editorNames, ws, selClient, view, currentUser, theme, saveStatus,
+      comments, addComment, activityLog, logActivity,
       setProjects, setClients, reorderClients, addEditorName, removeEditorName, setWs, setSelClient, setView, setCurrentUser, setTheme,
     }}>
       {children}

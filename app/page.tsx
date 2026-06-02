@@ -9,6 +9,7 @@ import TrackerView from '@/components/TrackerView';
 import DashboardView from '@/components/DashboardView';
 import MonthlyView from '@/components/MonthlyView';
 import EditorsView from '@/components/EditorsView';
+import ActivityView from '@/components/ActivityView';
 
 function AppShell() {
   const { currentUser, view } = useApp();
@@ -45,6 +46,7 @@ function AppShell() {
             {view === 'dashboard' && <DashboardView />}
             {view === 'monthly' && <MonthlyView />}
             {view === 'editors' && <EditorsView />}
+            {view === 'activity' && <ActivityView />}
           </div>
         </div>
       </div>

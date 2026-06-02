@@ -2,7 +2,7 @@ export type WorkspaceId = 'OBM' | 'CFM';
 export type Status = 'Done' | 'Full- Running' | 'Revision' | 'Waiting' | 'Pending' | 'Kishan';
 export type Priority = 'HIGH' | 'MEDIUM' | 'LOW' | '';
 export type Role = 'admin' | 'editor';
-export type View = 'tracker' | 'dashboard' | 'monthly' | 'editors';
+export type View = 'tracker' | 'dashboard' | 'monthly' | 'editors' | 'activity';
 
 export interface Project {
   id: string;
@@ -36,6 +36,22 @@ export interface Users {
 export interface SessionUser {
   username: string;
   role: Role;
+}
+
+export interface Comment {
+  id: string;
+  project_id: string;
+  username: string;
+  text: string;
+  created_at: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  username: string;
+  action: string;
+  details: string;
+  created_at: string;
 }
 
 export interface WorkspaceConfig {
