@@ -40,12 +40,13 @@ function NavBtn({ active, icon, label, onClick, danger = false }: {
       onClick={onClick}
       title={label}
       style={{
-        width: 44, height: 44, border: 'none', borderRadius: 12,
-        background: active ? '#fff' : 'transparent',
-        color: active ? '#111827' : danger ? 'rgba(248,113,113,0.7)' : 'rgba(255,255,255,0.45)',
+        width: 44, height: 44, borderRadius: 12,
+        border: active ? '1px solid rgba(124,111,247,0.4)' : '1px solid transparent',
+        background: active ? 'rgba(124,111,247,0.25)' : 'transparent',
+        color: active ? '#c4bdff' : danger ? 'rgba(248,113,113,0.7)' : 'rgba(255,255,255,0.45)',
+        boxShadow: active ? '0 0 14px rgba(124,111,247,0.3)' : 'none',
         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'all .15s',
-        boxShadow: active ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
       }}
       onMouseEnter={e => {
         if (!active) {
@@ -89,13 +90,19 @@ export default function NavSidebar() {
   return (
     <>
       <div style={{
-        width: 64, minWidth: 64, height: '100vh', background: '#111827',
+        width: 64, minWidth: 64, height: '100vh',
+        background: 'rgba(10,8,30,0.7)',
+        backdropFilter: 'blur(24px)',
+        borderRight: '1px solid rgba(255,255,255,0.07)',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         padding: '16px 0', gap: 4, zIndex: 20,
       }}>
         {/* Logo */}
         <div style={{
-          width: 38, height: 38, background: '#fff', borderRadius: 10,
+          width: 38, height: 38,
+          background: 'linear-gradient(135deg, #7c6ff7, #c084fc)',
+          borderRadius: 10,
+          boxShadow: '0 0 16px rgba(124,111,247,0.5)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           marginBottom: 16, flexShrink: 0, fontSize: 18,
         }}>🎬</div>

@@ -54,9 +54,11 @@ export default function Topbar({ onMenuClick, showMenu }: Props) {
         )}
         {/* Avatar */}
         <div style={{
-          width: 34, height: 34, borderRadius: '50%', background: 'var(--accent)',
-          color: 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 34, height: 34, borderRadius: '50%',
+          background: 'linear-gradient(135deg, #7c6ff7, #c084fc)',
+          color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 13, fontWeight: 700, flexShrink: 0, userSelect: 'none',
+          boxShadow: '0 0 12px rgba(124,111,247,0.4)',
         }}>
           {currentUser?.username?.[0]?.toUpperCase()}
         </div>
