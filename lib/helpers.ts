@@ -33,18 +33,18 @@ export function monthLabel(ym: string): string {
 }
 
 export const STATUS_STYLES: Record<Status, { bg: string; color: string; border: string }> = {
-  'Done':         { bg: '#f4f4f5', color: '#52525b', border: '#e4e4e7' },
-  'Full- Running':{ bg: '#111827', color: '#ffffff', border: '#111827' },
-  'Revision':     { bg: '#fafafa', color: '#3f3f46', border: '#d4d4d8' },
-  'Waiting':      { bg: '#fafafa', color: '#3f3f46', border: '#d4d4d8' },
-  'Pending':      { bg: '#fafafa', color: '#a1a1aa', border: '#e4e4e7' },
-  'Kishan':       { bg: '#18181b', color: '#e4e4e7', border: '#3f3f46' },
+  'Done':         { bg: 'rgba(52,211,153,0.12)',  color: '#34d399', border: 'rgba(52,211,153,0.25)'  },
+  'Full- Running':{ bg: 'rgba(96,165,250,0.15)',  color: '#60a5fa', border: 'rgba(96,165,250,0.30)'  },
+  'Revision':     { bg: 'rgba(251,191,36,0.12)',  color: '#fbbf24', border: 'rgba(251,191,36,0.25)'  },
+  'Waiting':      { bg: 'rgba(253,224,71,0.10)',  color: '#fde047', border: 'rgba(253,224,71,0.22)'  },
+  'Pending':      { bg: 'rgba(255,255,255,0.06)', color: 'rgba(240,238,255,0.45)', border: 'rgba(255,255,255,0.10)' },
+  'Kishan':       { bg: 'rgba(192,132,252,0.15)', color: '#c084fc', border: 'rgba(192,132,252,0.30)' },
 };
 
 export const PRIORITY_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  'HIGH':   { bg: '#18181b', color: '#fafafa', border: '#3f3f46' },
-  'MEDIUM': { bg: '#f4f4f5', color: '#52525b', border: '#d4d4d8' },
-  'LOW':    { bg: '#fafafa', color: '#a1a1aa', border: '#e4e4e7' },
+  'HIGH':   { bg: 'rgba(248,113,113,0.15)', color: '#f87171', border: 'rgba(248,113,113,0.30)' },
+  'MEDIUM': { bg: 'rgba(251,191,36,0.12)',  color: '#fbbf24', border: 'rgba(251,191,36,0.25)'  },
+  'LOW':    { bg: 'rgba(255,255,255,0.06)', color: 'rgba(240,238,255,0.4)', border: 'rgba(255,255,255,0.10)' },
 };
 
 export const WS_CFG = {

@@ -29,11 +29,26 @@ function PriChip({ priority }: { priority: Priority }) {
 function DateChip({ value, isDone }: { value: string; isDone?: boolean }) {
   if (!value) return <span style={{ color: 'var(--text4)', fontSize: 12 }}>—</span>;
   const st = isDone ? 'done' : dateStatus(value);
-  const dotColor: Record<string, string> = { done: '#a1a1aa', overdue: '#e05252', today: '#111827', soon: '#d4a14a', upcoming: '#d1d5db' };
-  const textColor: Record<string, string> = { done: '#a1a1aa', overdue: '#e05252', today: '#111827', soon: '#111827', upcoming: '#6b7280' };
+
+  const cfg: Record<string, { bg: string; color: string; border: string }> = {
+    done:     { bg: 'rgba(255,255,255,0.04)', color: 'var(--text3)',          border: 'rgba(255,255,255,0.06)' },
+    overdue:  { bg: 'rgba(239,68,68,0.12)',   color: '#f87171',               border: 'rgba(239,68,68,0.25)'   },
+    today:    { bg: 'rgba(124,111,247,0.18)', color: '#a89cff',               border: 'rgba(124,111,247,0.35)' },
+    soon:     { bg: 'rgba(251,191,36,0.12)',  color: '#fbbf24',               border: 'rgba(251,191,36,0.25)'  },
+    upcoming: { bg: 'rgba(255,255,255,0.06)', color: 'var(--text2)',          border: 'rgba(255,255,255,0.10)' },
+  };
+  const c = cfg[st] || cfg.upcoming;
+
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'DM Mono, monospace', fontSize: 11, fontWeight: st === 'today' || st === 'soon' ? 700 : 500, color: textColor[st], whiteSpace: 'nowrap', textDecoration: st === 'done' ? 'line-through' : 'none' }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: dotColor[st] }} />
+    <span style={{
+      display: 'inline-flex', alignItems: 'center',
+      background: c.bg, color: c.color,
+      border: `1px solid ${c.border}`,
+      borderRadius: 6, padding: '3px 8px',
+      fontSize: 11, fontFamily: 'DM Mono, monospace',
+      fontWeight: 500, whiteSpace: 'nowrap',
+      backdropFilter: 'blur(4px)',
+    }}>
       {fmtDate(value)}
     </span>
   );
