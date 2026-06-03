@@ -274,7 +274,7 @@ export default function TrackerView() {
           <div style={{ position: 'relative' }}>
             <button className="btn" style={{ fontSize: 12 }} onClick={() => setShowColMenu(v => !v)}>Columns ▾</button>
             {showColMenu && (
-              <div style={{ position: 'absolute', right: 0, top: '110%', background: '#1e1a35', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: 10, zIndex: 50, minWidth: 140, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ position: 'absolute', right: 0, top: '110%', background: 'var(--dropdown-bg, #1e1a35)', border: '1px solid var(--border2)', borderRadius: 10, padding: 10, zIndex: 50, minWidth: 140, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {ALL_COLS.map(col => (
                   <label key={col} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', userSelect: 'none' }}>
                     <input type="checkbox" checked={visibleCols.has(col)} onChange={() => toggleCol(col)} />
