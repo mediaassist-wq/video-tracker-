@@ -2,10 +2,11 @@
 import { useApp } from '@/context/AppContext';
 
 const THEMES = [
-  { id: '', label: 'Default', desc: 'Light & clean', colors: ['#f5f5f5', '#ffffff', '#111827', '#374151'] },
-  { id: 'theme-midnight', label: 'Midnight', desc: 'Dark & sleek', colors: ['#0d0d0d', '#1a1a1a', '#e8e8e8', '#666666'] },
-  { id: 'theme-ocean', label: 'Ocean', desc: 'Deep blue dark', colors: ['#0a1628', '#0f1f3d', '#4da6ff', '#94b8e8'] },
-  { id: 'theme-moss', label: 'Moss', desc: 'Earthy green dark', colors: ['#0c1a0e', '#122214', '#6bcb77', '#92b890'] },
+  { id: '',             label: 'Glass Dark',  desc: 'Default — dark glass',   colors: ['#0d0d1a', '#1a1030', '#7c6ff7', '#c084fc'] },
+  { id: 'theme-light',  label: 'Light',       desc: 'Clean white & purple',   colors: ['#f3f4f6', '#ffffff', '#7c6ff7', '#111827'] },
+  { id: 'theme-midnight',label: 'Midnight',   desc: 'Pure dark & minimal',    colors: ['#0a0a0f', '#1a1a1a', '#e8e8e8', '#555'] },
+  { id: 'theme-ocean',  label: 'Ocean',       desc: 'Deep blue dark',         colors: ['#060d1f', '#0f1f3d', '#4da6ff', '#94b8e8'] },
+  { id: 'theme-moss',   label: 'Moss',        desc: 'Earthy green dark',      colors: ['#080f09', '#122214', '#6bcb77', '#92b890'] },
 ];
 
 export default function ThemeModal({ onClose }: { onClose: () => void }) {

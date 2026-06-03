@@ -46,7 +46,7 @@ function SortableClient({
           justifyContent: 'space-between', gap: 4, padding: '6px 8px',
           border: 'none', borderRadius: 'var(--r)',
           background: isActive ? 'var(--accent)' : hovered ? 'var(--bg4)' : 'transparent',
-          color: isActive ? 'var(--bg2)' : 'var(--text)',
+          color: isActive ? '#fff' : 'var(--text)',
           fontSize: 13, textAlign: 'left', cursor: 'pointer', transition: 'all .1s', overflow: 'hidden',
         }}
       >
@@ -56,7 +56,7 @@ function SortableClient({
         <span style={{
           flexShrink: 0,
           background: isActive ? 'rgba(255,255,255,.2)' : 'var(--bg5)',
-          color: isActive ? 'var(--bg2)' : 'var(--text3)',
+          color: isActive ? 'rgba(255,255,255,0.8)' : 'var(--text3)',
           borderRadius: 10, padding: '0 5px', fontSize: 10, minWidth: 18,
           textAlign: 'center', fontFamily: 'DM Mono, monospace',
         }}>{count}</span>
